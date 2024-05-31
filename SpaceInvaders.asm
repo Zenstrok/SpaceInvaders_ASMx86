@@ -61,27 +61,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         MOV numeroRandom, AH ; Pasar residuo a numeroRandom
     ENDM
 
-    ;generarNumeroRandomPar MACRO limite
-        ;LOCAL bucleGenerarRandomP
-
-        ;bucleGenerarRandomP:
-        ;MOV AH, 2Ch ; Obtener la hora actual del sistema para usar como semilla
-        ;INT 21h ; Ejecutar la configuracion
-        ;MOV AL, DH ; Pasar los segundos a AL
-        
-        ;XOR AH, AH ; AH = 0
-        ;MOV BL, limite ; Mover a BL el límite del numero
-        ;DIV BL ; Dividir AH / BL (Limite)
-
-        ;MOV BL, 2 ; Mover a BL el número 2
-        ;MOV AL, AH ; Mover a AL el residuo
-        ;DIV BL ; Dividir AL / 2
-        ;CMP AL, 0 ; Comparar si el residuo es 0
-        ;JNE bucleGenerarRandomP ; Si no es 0, volver a generar el número
-
-        ;MOV numeroRandom, AH ; Pasar residuo a numeroRandom
-    ;ENDM
-
     ; Macro para guardar la posicion de un disparo en el arreglo de disparos
     ; ENTRADAS: posicionDisparo = Posicion del disparo a guardar
     ; SALIDAS: No tiene
@@ -435,7 +414,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
             CMP contadorMovimientoAliens, AH ; Comparar si ya se deben mover los aliens
             JNE noMoverAliens ; Si aún no llega a 40 el contador, no mover los aliens
             CALL llamarMoverAliens ; Mover los aliens
-            ;CALL dispararAlien ; Hacer que un alien dispare
             MOV contadorMovimientoAliens, 0 ; Resetear el contador de movimiento de aliens
 
             noMoverAliens:
@@ -449,7 +427,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
             CALL mostrarDisparos ; Mostrar los disparos guardados
             CALL llamarMostrarAliens ; Mostrar todos los aliens
             CALL verificarColisiones ; Verificar las colisiones de bala
-            ;CALL mostrarDisparosAliens
             imprimirCadena etiquetaPuntuacion, 1, 1 ; Llamar al macro para imprimir la puntuacion
 
             JMP revisarTiempo
@@ -703,57 +680,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 
         ;*************** FIN MOSTRAR DISPAROS *****************
 
-        ;************* MOSTRAR DISPAROS ALIENS ****************
-        
-        ; Procedimiento para imprimir todos los disparos que están en el arreglo
-        ; ENTRADAS: No Recibe
-        ; SALIDAS: Imprime en pantalla una secuencia de disparos y deja lista la siguiente
-        ;mostrarDisparosAliens PROC NEAR
-        ;    MOV SI, 0 ; Inicializar el indice del arreglo en 0
-        ;    bucleMostrarDisparosAliens:
-        ;       CMP SI, 10 ; Comparar si la posicion actual del arreglo es 10
-        ;        JE finMostrarDisparosAliens ; Si es 12, entonces salir del bucle
-        ;        MOV BX, arregloDisparosAliens[SI] ; Mover a BX la posicion actual del disparo
-
-        ;        CMP BX, 0 ; Comparar si la posicion actual del disparo es 0
-        ;        JE seguirBucleDisparosAliens ; Si es 0, entonces continuar con el bucle
-
-        ;        CMP BH, 5 ; Comparar si la fila (Y) es 5
-        ;        JBE terminarDisparoAliens ; Si es 5, entonces terminar el disparo y restablecer el arreglo
-
-        ;        MOV DL, BH ; Mover a DX la fila (Y)
-        ;        XOR DH, DH
-        ;        MOV CL, BL ; Mover a CX la columna (X)
-        ;        XOR CH, CH
-
-        ;        ADD BH, 3
-        ;        MOV arregloDisparosAliens[SI], BX ; Guardar la nueva posicion del disparo en el arreglo
-
-        ;        MOV AH, 0Ch ; Configurar para escribir un pixel
-        ;        MOV AL, 0Fh ; Morado para el color del pixel
-        ;        MOV BH, 00h ; Numero de pagina (0 es la actual)
-        ;        INT 10h ; Dibujar pixel
-
-        ;        INC DX ; Incrementar la fila (Mover hacia abajo 1 pixel)
-        ;        INT 10h ; Dibujar pixel
-
-        ;        INC DX ; Incrementar la fila (Mover hacia abajo 1 pixel)
-        ;        INT 10h ; Dibujar pixel
-
-        ;        JMP seguirBucleDisparosAliens ; Volver al inicio del bucle
-
-        ;        terminarDisparoAliens:
-        ;        MOV arregloDisparosAliens[SI], 0 ; Restablecer la posicion del disparo en el arreglo
-
-        ;        seguirBucleDisparosAliens:
-        ;        ADD SI, 2 ; Sumar 2 al indice del arreglo
-        ;        JMP bucleMostrarDisparosAliens ; Volver al inicio del bucle
-        ;    finMostrarDisparosAliens:
-        ;        RET ; Retornar procedimiento
-        ;mostrarDisparosAliens ENDP
-
-        ;*********** FIN MOSTRAR DISPAROS ALIENS **************
-
         ;****************** MOSTRAR ALIENS ********************
 
         ; Procedimiento para imprimir todos los aliens que estén vivos
@@ -783,69 +709,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         verificarColisiones ENDP
 
         ;************* FIN VERIFICAR COLISIONES ***************
-
-        ;****************** DISPARAR ALIEN ********************
-
-        ; Procedimiento para disparar un alien aleatorio
-        ; ENTRADAS: No Recibe
-        ; SALIDAS: Dispara un alien aleatorio
-        ;dispararAlien PROC NEAR
-        ;    inicioDispararAlien:
-        ;    generarNumeroRandom 3 ; Generar un número aleatorio entre 0 y 2
-        ;    MOV AL, numeroRandom ; Mover a AL el número aleatorio
-        ;    CMP AL, 0 ; Comparar si el número aleatorio es 0
-        ;    JE esCero
-        ;    CMP AL, 1 ; Comparar si el número aleatorio es 1
-        ;    JE esUno
-        ;    JMP esDos ; Si no es 0 ni 1, entonces es 2
-
-            ; Si es cero:
-        ;    esCero:
-        ;        generarNumeroRandomPar 19 ; Generar un número aleatorio entre 0 y 18
-        ;        XOR AH, AH ; Limpiar AH
-        ;        MOV AL, numeroRandom ; Mover a AL el número aleatorio
-                
-        ;        MOV SI, AX ; Mover a SI el número aleatorio
-        ;        MOV BX, arregloAliens1[SI] ; Mover a BX la posicion del alien
-        ;        CMP BX, 0 ; Comparar si el alien está muerto
-        ;        JE inicioDispararAlien ; Si está muerto, volver a empezar
-
-        ;        JMP enviarDisparoAlien ; Si no está muerto, entonces disparar
-
-            ; Si es uno:
-        ;    esUno:
-        ;        generarNumeroRandomPar 39 ; Generar un número aleatorio entre 0 y 38
-        ;        XOR AH, AH ; Limpiar AH
-        ;        MOV AL, numeroRandom ; Mover a AL el número aleatorio
-
-        ;        MOV SI, AX ; Mover a SI el número aleatorio
-        ;        MOV BX, arregloAliens2[SI] ; Mover a BX la posicion del alien
-        ;        CMP BX, 0 ; Comparar si el alien está muerto
-        ;        JE inicioDispararAlien ; Si está muerto, volver a empezar
-
-        ;        JMP enviarDisparoAlien ; Si no está muerto, entonces disparar
-
-            ; Si es dos:
-        ;    esDos:
-        ;        generarNumeroRandomPar 39 ; Generar un número aleatorio entre 0 y 38
-        ;        XOR AH, AH ; Limpiar AH
-        ;        MOV AL, numeroRandom ; Mover a AL el número aleatorio
-
-        ;        MOV SI, AX ; Mover a SI el número aleatorio
-        ;        MOV BX, arregloAliens3[SI] ; Mover a BX la posicion del alien
-        ;        CMP BX, 0 ; Comparar si el alien está muerto
-        ;        JE inicioDispararAlien ; Si está muerto, volver a empezar
-
-        ;        JMP enviarDisparoAlien ; Si no está muerto, entonces disparar
-
-        ;    enviarDisparoAlien:
-                ; BH = Fila (Y) / BL = Columna (X)
-        ;        ADD DX, 4 ; Sumar 4 a la fila (Cuatro filas más abajo)
-        ;        guardarDisparoAlien BX ; Llamar al macro para guardar el disparo
-
-        ;dispararAlien ENDP
-
-        ;**************** FIN DISPARAR ALIEN ******************
 
         ;******************* MOVER ALIENS *********************
 
