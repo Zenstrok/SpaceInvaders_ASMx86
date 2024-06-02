@@ -17,13 +17,16 @@ direccionMovimientoAliens DB 0 ; Direccion del movimiento de los aliens (0 = Der
 numeroRandom DB 0 ; Numero aleatorio para el disparo de los aliens
 
 ;******** VARIABLES AUX ********
+vidasNave DB 1 ; Vidas de la nave
 tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya pasó cierto tiempo)
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
 velocidadMovimientoAliens DB 20 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 40 p.d
 
 ;*********** PUNTOS ************
-variableVictoria DB 0 ; Variable para saber si el jugador ganó (1 = Ganó, 0 = No ganó aún)
+variableVictoria DB 0 ; Variable para saber si el jugador ganó (1 = Ganó, 0 = No ganó aún, 2 = Perdió)
 etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
+mensajeVictoria DB "VICTORIA!", "$" ; Mensaje de victoria
+mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
 
 .code
     ;***************** FUNCIONES (MACROS) ****************
@@ -207,10 +210,10 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
                 JE seguirBucleVerificarColisionesAliens ; Si está muerto, continuar con el siguiente alien
 
                 CMP BH, AH ; Comparar si la fila (Y) del disparo es igual a la del alien
-                JA seguirBucleVerificarColisionesAliens ; Si es mayor, continuar con el bucle
+                JB seguirBucleVerificarColisionesAliens ; Si es menor, continuar con el bucle
 
-                SUB AH, BH ; Restar la fila del alien con la del disparo
-                CMP AH, 6 ; Comparar si la resta anterior es menor o igual a 6 (Hitbox vertical del alien)
+                SUB BH, AH ; Restar la fila del disparo - la fila del alien
+                CMP BH, 6 ; Comparar si la resta anterior es menor o igual a 6 (Hitbox vertical del alien)
                 JA seguirBucleVerificarColisionesAliens ; Si es mayor, entonces seguir con el siguiente Alien
 
                 CMP AL, BL ; Comparar si la columna (X) del disparo es igual a la del alien
@@ -283,6 +286,58 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
                 ADD SI, 2 ; Sumar 2 al indice del arreglo
                 JMP bucleVerificarColisiones ; Volver al inicio del bucle
         salirVerificarColisiones:
+    ENDM
+
+    ; Macro para verificar las colisiones de las balas de los aliens con la nave
+    ; SALIDAS: Verifica las colisiones de las balas de los aliens con la nave y elimina la nave si colisiona
+    colisionesBalasConNave MACRO
+        LOCAL bucleVerificarColisionesAliens, seguirBucleVerificarColisionesAliens, salirVerificarColisionesAliens, ejecutarResta
+        MOV SI, 0
+        bucleVerificarColisionesAliens:
+            CMP SI, 6 ; Comparar si la posicion actual del arreglo es 6
+            JE salirVerificarColisionesAliens ; Si es 6, entonces salir del bucle
+            MOV BX, arregloDisparosAliens[SI] ; Mover a BX la posicion actual del disparo
+
+            CMP BX, 0 ; Comparar si la posicion actual del disparo es 0
+            JE seguirBucleVerificarColisionesAliens ; Si es 0, entonces seguir con el siguiente disparo
+
+            MOV CX, naveX ; Mover a CX la columna (X) de la nave
+            MOV AL, CL ; Mover a AL la columna (X) del disparo
+            MOV CX, naveY ; Mover a CX la fila (Y) de la nave
+            MOV AH, CL ; Mover a AH la fila (Y) del disparo
+
+            ADD AH, 4 ; Sumar 4 a la Y de la nave
+            CMP BH, AH ; Comparar si la fila (Y) de la bala es igual a la de la nave + 4
+            JB seguirBucleVerificarColisionesAliens ; Si es mayor, continuar con el bucle
+
+            SUB BH, AH ; Restar (la fila de la nave + 4) - la fila del disparo
+            CMP BH, 4 ; Comparar si la resta anterior es menor o igual a 4 (Hitbox vertical de la nave)
+            JA seguirBucleVerificarColisionesAliens ; Si es mayor, continuar con el bucle
+
+            CMP AL, BL ; Comparar si la columna (X) del disparo es igual a la de la bala
+            JAE ejecutarResta ; Si es mayor o igual, entonces restar la columna de la bala con la de la nave directamente
+            XCHG AL, BL ; De lo contrario, intercambiar los valores de AL y BL antes de la resta
+
+            ejecutarResta:
+                SUB AL, BL ; Restar la columna mayor - la columna menor
+            
+            CMP AL, 3 ; Comparar si la resta anterior es menor o igual a 3 (Hitbox horizontal de la nave)
+            JA seguirBucleVerificarColisionesAliens ; Si es mayor, entonces seguir con el siguiente disparo
+
+            MOV etiquetaPuntuacion[0], '!' ; Mover a la etiqueta el primer caracter de la puntuacion
+            MOV arregloDisparosAliens[SI], 0 ; Eliminar disparo de alien
+            DEC vidasNave ; Eliminar una vida de nave
+
+            CMP vidasNave, 0 ; Comparar si las vidas de la nave son 0
+            JNE seguirBucleVerificarColisionesAliens ; Si no es 0, continuar con el bucle
+
+            MOV variableVictoria, 2 ; Si es 0, entonces el jugador perdió
+            JMP salirVerificarColisionesAliens ; Salir de la verificacion de colisiones
+
+            seguirBucleVerificarColisionesAliens:
+                ADD SI, 2 ; Sumar 2 al indice del arreglo
+                JMP bucleVerificarColisionesAliens ; Volver al inicio del bucle
+        salirVerificarColisionesAliens:
     ENDM
 
     ; Macro para dibujar el alien de la primera fila
@@ -416,6 +471,7 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
             INC contadorMovimientoAliens
 
             ; Demás acciones del juego
+            CALL verificarPartida ; Ver si ya se ganó o perdió
             CALL accionarNave ; Recibir la accion para la nave
             CALL limpiarPantalla ; Limpiar la pantalla (En negro)
             CALL dibujarMarco ; Dibujar el marco de juego
@@ -473,6 +529,25 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         dibujarMarco ENDP
 
         ;****************** FIN DIBUJAR MARCO *****************
+
+        verificarPartida PROC NEAR
+            CMP variableVictoria, 1 ; Si ganó
+            JE imprimirVictoria ; Imprimir mensaje de victoria
+            CMP variableVictoria, 2 ; Si perdió
+            JE imprimirDerrota ; Imprimir mensaje de derrota
+            JNE finalizarVerificacion ; Si no ha ganado ni perdido, continuar con el juego
+
+            imprimirVictoria:
+                imprimirCadena mensajeVictoria, 10, 10 ; Imprimir mensaje de victoria
+                JMP finalizarPrograma ; Salir del programa
+            
+            imprimirDerrota:
+                imprimirCadena mensajeDerrota, 10, 10 ; Imprimir mensaje de derrota
+                JMP finalizarPrograma ; Salir del programa
+
+            finalizarVerificacion:
+                RET ; Retornar procedimiento
+        verificarPartida ENDP
 
         ;******************** ACCIONAR NAVE *******************
 
@@ -658,7 +733,7 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
                 CMP BX, 0 ; Comparar si la posicion actual del disparo es 0
                 JE seguirBucleDisparosAliens ; Si es 0, entonces continuar con el bucle
 
-                CMP BH, 00C2h ; Comparar si la fila (Y) es 00C2h (Límite inferior de la pantalla)
+                CMP BH, 00C6h ; Comparar si la fila (Y) es 00C6h (Límite inferior de la pantalla)
                 JAE terminarDisparoAliens ; Si es 5, entonces terminar el disparo y restablecer el arreglo
 
                 MOV DL, BH ; Mover a DX la fila (Y)
@@ -714,6 +789,7 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
             colisionesBalasConAliens arregloAliens1, 20 ; Verificar colisiones con los aliens de la primera fila
             colisionesBalasConAliens arregloAliens2, 40 ; Verificar colisiones con los aliens de la segunda y tercera fila
             colisionesBalasConAliens arregloAliens3, 40 ; Verificar colisiones con los aliens de la cuarta y quinta fila
+            colisionesBalasConNave ; Verificar colisiones con la nave
             RET ; Retornar procedimiento
         verificarColisiones ENDP
 
@@ -822,5 +898,8 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 
         ;**************** FIN MOVER ALIENS ********************
 
+        finalizarPrograma:
+            MOV AH, 4Ch ; Salir del programa
+            INT 21h ; Ejecutar la configuracion
     main ENDP
 END
