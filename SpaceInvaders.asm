@@ -17,8 +17,6 @@ direccionMovimientoAliens DB 0 ; Direccion del movimiento de los aliens (0 = Der
 numeroRandom DB 0 ; Numero aleatorio para el disparo de los aliens
 
 ;******** VARIABLES AUX ********
-naveLargo DW 0Ch ; Largo de la nave (Pixeles que tiene la nave de largo)
-naveAncho DW 03h ; Ancho de la nave (Pixeles que tiene la nave de ancho)
 tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya pasó cierto tiempo)
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
 velocidadMovimientoAliens DB 20 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 40 p.d
@@ -31,9 +29,7 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
     ;***************** FUNCIONES (MACROS) ****************
 
     ; Macro para imprimir una cadena en pantalla
-    ; ENTRADAS: texto = Cadena a imprimir
-    ;           x = Fila donde se va a imprimir
-    ;           y = Columna donde se va a imprimir
+    ; ENTRADAS: texto = Cadena a imprimir, x = Fila donde se va a imprimir, y = Columna donde se va a imprimir
     ; SALIDAS: Imprime en la posicion x,y el texto recibido
     imprimirCadena MACRO texto, x, y
         mov AH, 02h
@@ -63,7 +59,7 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 
     ; Macro para guardar la posicion de un disparo en el arreglo de disparos
     ; ENTRADAS: posicionDisparo = Posicion del disparo a guardar
-    ; SALIDAS: No tiene
+    ; SALIDAS: Guarda la posicion del disparo en el arreglo de disparos
     guardarDisparo MACRO posicionDisparo
         LOCAL bucleGuardarDisparo, continuarGuardarDisparo, finGuardarDisparo
         MOV SI, 0
@@ -81,7 +77,7 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 
     ; Macro para guardar la posicion de un disparo en el arreglo de disparos de aliens
     ; ENTRADAS: posicionDisparo = Posicion del disparo a guardar
-    ; SALIDAS: No tiene
+    ; SALIDAS: Guarda la posicion del disparo en el arreglo de disparos de aliens
     guardarDisparoAlien MACRO posicionDisparo
         LOCAL bucleGuardarDisparo, continuarGuardarDisparo, finGuardarDisparo
         MOV SI, 0
@@ -290,7 +286,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
     ENDM
 
     ; Macro para dibujar el alien de la primera fila
-    ; ENTRADAS: No tiene
     ; SALIDAS: Imprime en pantalla el alien de la primera fila según DX y CX
     dibujarAlien1 MACRO
         MOV AH, 0Ch ; Configurar para escribir un pixel
@@ -439,7 +434,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;****************** LIMPIAR PANTALLA ******************
 
         ; Procedimiento para limpiar la pantalla y configurarla nuevamente
-        ; ENTRADAS: No recibe
         ; SALIDAS: Configura la pantalla de nuevo y la pone en negro
         limpiarPantalla PROC NEAR
             MOV AH, 00h ; Poner la configuracion en modo de video
@@ -458,7 +452,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;******************** DIBUJAR MARCO *******************
 
         ; Procedimiento para dibujar un marco divisor en la zona de juego
-        ; ENTRADAS: No recibe
         ; SALIDAS: Imprime en la pantalla el marco correspondiente
         dibujarMarco PROC NEAR
             MOV AH, 0Ch ; Configurar para escribir un pixel
@@ -605,7 +598,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;***************** MOSTRAR DISPAROS *******************
         
         ; Procedimiento para imprimir todos los disparos que están en el arreglo
-        ; ENTRADAS: No Recibe
         ; SALIDAS: Imprime en pantalla una secuencia de disparos y deja lista la siguiente
         mostrarDisparos PROC NEAR
             MOV SI, 0 ; Inicializar el indice del arreglo en 0
@@ -631,22 +623,21 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
                 MOV AH, 0Ch ; Configurar para escribir un pixel
                 MOV AL, 05h ; Morado para el color del pixel
                 MOV BH, 00h ; Numero de pagina (0 es la actual)
-                INT 10h ; Dibujar pixel
 
+                INT 10h ; Dibujar pixel
                 INC DX ; Incrementar la fila (Mover hacia abajo 1 pixel)
                 INT 10h ; Dibujar pixel
-
                 INC DX ; Incrementar la fila (Mover hacia abajo 1 pixel)
                 INT 10h ; Dibujar pixel
 
                 JMP seguirBucleDisparos ; Volver al inicio del bucle
 
                 terminarDisparo:
-                MOV arregloDisparos[SI], 0 ; Restablecer la posicion del disparo en el arreglo
+                    MOV arregloDisparos[SI], 0 ; Restablecer la posicion del disparo en el arreglo
 
                 seguirBucleDisparos:
-                ADD SI, 2 ; Sumar 2 al indice del arreglo
-                JMP bucleMostrarDisparos ; Volver al inicio del bucle
+                    ADD SI, 2 ; Sumar 2 al indice del arreglo
+                    JMP bucleMostrarDisparos ; Volver al inicio del bucle
             finMostrarDisparos:
                 RET ; Retornar procedimiento
         mostrarDisparos ENDP
@@ -656,20 +647,19 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;************* MOSTRAR DISPAROS ALIENS ****************
         
         ; Procedimiento para imprimir todos los disparos que están en el arreglo
-        ; ENTRADAS: No Recibe
         ; SALIDAS: Imprime en pantalla una secuencia de disparos y deja lista la siguiente
         mostrarDisparosAliens PROC NEAR
             MOV SI, 0 ; Inicializar el indice del arreglo en 0
             bucleMostrarDisparosAliens:
-               CMP SI, 6 ; Comparar si la posicion actual del arreglo es 6
+                CMP SI, 6 ; Comparar si la posicion actual del arreglo es 6
                 JE finMostrarDisparosAliens ; Si es 6, entonces salir del bucle
                 MOV BX, arregloDisparosAliens[SI] ; Mover a BX la posicion actual del disparo
 
                 CMP BX, 0 ; Comparar si la posicion actual del disparo es 0
                 JE seguirBucleDisparosAliens ; Si es 0, entonces continuar con el bucle
 
-                CMP BH, 5 ; Comparar si la fila (Y) es 5
-                JBE terminarDisparoAliens ; Si es 5, entonces terminar el disparo y restablecer el arreglo
+                CMP BH, 00C2h ; Comparar si la fila (Y) es 00C2h (Límite inferior de la pantalla)
+                JAE terminarDisparoAliens ; Si es 5, entonces terminar el disparo y restablecer el arreglo
 
                 MOV DL, BH ; Mover a DX la fila (Y)
                 XOR DH, DH
@@ -686,18 +676,17 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 
                 INC DX ; Incrementar la fila (Mover hacia abajo 1 pixel)
                 INT 10h ; Dibujar pixel
-
                 INC DX ; Incrementar la fila (Mover hacia abajo 1 pixel)
                 INT 10h ; Dibujar pixel
 
                 JMP seguirBucleDisparosAliens ; Volver al inicio del bucle
 
                 terminarDisparoAliens:
-                MOV arregloDisparosAliens[SI], 0 ; Restablecer la posicion del disparo en el arreglo
+                    MOV arregloDisparosAliens[SI], 0 ; Restablecer la posicion del disparo en el arreglo
 
                 seguirBucleDisparosAliens:
-                ADD SI, 2 ; Sumar 2 al indice del arreglo
-                JMP bucleMostrarDisparosAliens ; Volver al inicio del bucle
+                    ADD SI, 2 ; Sumar 2 al indice del arreglo
+                    JMP bucleMostrarDisparosAliens ; Volver al inicio del bucle
             finMostrarDisparosAliens:
                 RET ; Retornar procedimiento
         mostrarDisparosAliens ENDP
@@ -707,14 +696,12 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;****************** MOSTRAR ALIENS ********************
 
         ; Procedimiento para imprimir todos los aliens que estén vivos
-        ; ENTRADAS: No Recibe
         ; SALIDAS: Imprime en pantalla todos los aliens vivos
         llamarMostrarAliens PROC NEAR
             mostrarAliens arregloAliens1, 20 ; Mostrar los aliens de la primera fila
             mostrarAliens arregloAliens2, 40 ; Mostrar los aliens de la segunda y tercera fila
             mostrarAliens arregloAliens3, 40 ; Mostrar los aliens de la cuarta y quinta fila
-
-                RET ; Retornar procedimiento
+            RET ; Retornar procedimiento
         llamarMostrarAliens ENDP
 
         ;**************** FIN MOSTRAR ALIENS ******************
@@ -722,13 +709,11 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;*************** VERIFICAR COLISIONES *****************
 
         ; Procedimiento para verificar si un disparo colisiona con un alien
-        ; ENTRADAS: No Recibe
         ; SALIDAS: Verifica si un disparo colisiona con un alien y lo elimina
         verificarColisiones PROC NEAR
             colisionesBalasConAliens arregloAliens1, 20 ; Verificar colisiones con los aliens de la primera fila
             colisionesBalasConAliens arregloAliens2, 40 ; Verificar colisiones con los aliens de la segunda y tercera fila
             colisionesBalasConAliens arregloAliens3, 40 ; Verificar colisiones con los aliens de la cuarta y quinta fila
-
             RET ; Retornar procedimiento
         verificarColisiones ENDP
 
@@ -737,7 +722,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;****************** DISPARAR ALIEN ********************
 
         ; Procedimiento para disparar un alien aleatorio
-        ; ENTRADAS: No Recibe
         ; SALIDAS: Dispara un alien aleatorio
         dispararAlien PROC NEAR
             inicioDispararAlien:
@@ -771,7 +755,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
                 MOV AH, numeroRandom ; Mover a AH el número aleatorio
                 MOV AL, 2 ; Mover a AL el número 2
                 MUL AH ; Multiplicar el número aleatorio por 2
-
                 XOR AH, AH ; Limpiar AH
 
                 MOV SI, AX ; Mover a SI el número aleatorio
@@ -802,7 +785,6 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
                 ADD DX, 4 ; Sumar 4 a la fila (Cuatro filas más abajo)
                 guardarDisparoAlien BX ; Llamar al macro para guardar el disparo
 
-            ; Salir del procedimiento
             salirDispararAlien:
                 RET ; Retornar procedimiento
         dispararAlien ENDP
@@ -841,5 +823,4 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ;**************** FIN MOVER ALIENS ********************
 
     main ENDP
-
 END
