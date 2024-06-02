@@ -488,34 +488,27 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
         ; SALIDAS: Si hay una tecla presionada y es una de movimiento o disparo, lo ejecuta
         accionarNave PROC NEAR
             ; Ver si hay una tecla presionada, de lo contrario, salir del procedimiento
-
             MOV AH, 01h ; Configurar para leer si hay una tecla presionada
             INT 16h
             JZ salirAccionarNave ; Si no hay una tecla presionada, entonces salir del movimiento de nave
 
             ; Ver cuál tecla está presionada (Al == caracter en ASCII)
-
             MOV AH, 0 ; Configurar para leer la tecla presionada
             INT 16h
 
             ; Si toca 'D' o 'd', entonces ir a la derecha
-
             CMP AL, 44h ; 44h == 'D'
             JE moverDerecha
-
             CMP AL, 64h ; 64h == 'd'
             JE moverDerecha
 
             ; Si toca 'A' o 'a', entonces ir a la izquierda
-
             CMP AL, 41h ; 41h == 'A'
             JE moverIzquierda
-
             CMP AL, 61h ; 61h == 'a'
             JE moverIzquierda
 
             ; Si toca 'Espacio', entonces disparar
-
             CMP AL, 20h ; 20h == 'Espacio'
             JE disparar
 
@@ -524,27 +517,22 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
             moverDerecha:
                 CMP naveX, 248 ; 248 es el maximo de la columna (Para que no se salga y quede margen)
                 JAE salirAccionarNave ; Si es mayor o igual a 248, entonces salir del movimiento de nave
-
                 ADD naveX, 3 ; Sumar 3 a la columna (Mover a la derecha 3 pixeles)
                 JMP salirAccionarNave
             
             moverIzquierda:
                 CMP naveX, 28 ; 28 es el minimo de la columna (Para que no se salga y quede margen)
                 JBE salirAccionarNave ; Si es menor o igual a 60, entonces salir del movimiento de nave
-
                 SUB naveX, 3 ; Restar 3 a la columna (Mover a la izquierda 3 pixeles)
                 JMP salirAccionarNave
             
             disparar:
                 MOV CX, naveX ; CX = Columna (X)
                 MOV DX, naveY ; DX = Fila (Y)
-                SUB DX, 2 ; Restar 2 a la fila (Dos filas más arriba)
-                ADD CX, 6 ; Sumar 4 a la columna (Mover a la derecha 4 pixeles)
 
                 ; Guardar la posicion del disparo en el arreglo
                 MOV BH, DL ; Mover a BH la fila (Y)
                 MOV BL, CL ; Mover a BL la columna (X)
-
                 guardarDisparo BX ; Llamar al macro para guardar el disparo
 
                 JMP salirAccionarNave
@@ -559,72 +547,55 @@ etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 
         ; Procedimiento para dibujar la nave e imprimirla en pantalla
         ; ENTRADAS: Lee la posición (x,y) de la nave
-        ; SALIDAS: Imprime en pantalla la nave dibujada
+        ; SALIDAS: Imprime en pantalla la nave dibujada (Va a ser 13x5)
         dibujarNave PROC NEAR
             MOV CX, naveX ; CX = Columna (X)
             MOV DX, naveY ; DX = Fila (Y)
-
-            dibujarNaveHorizontal:
-                CMP DX, naveY ; Comparar DX (Fila actual) con naveY (Primera fila)
-                JNE continuarDibujoHorizontal ; Si no son iguales, continúa con el dibujo
-                CMP CX, naveX ; Comparar CX (Columna actual) con naveX (Primera columna)
-                JE continuarSinDibujoHorizontal ; Si son iguales, no dibujarlo
-                MOV AX, CX ; Mover a AX la columna actual CX
-                SUB AX, naveX ; CX - naveX (Posicion X de la nave)
-                CMP AX, naveLargo ; Comparar para ver si la resta anterior es igual al largo de la nave
-                JE continuarSinDibujoHorizontal ; Si es igual, no dibujarlo
-
-                continuarDibujoHorizontal:
-                MOV AH, 0Ch ; Configurar para escribir un pixel
-                MOV AL, 05h ; Morado para el color del pixel
-                MOV BH, 00h ; Numero de pagina (0 es la actual)
-
-                INT 10h ; Dibujar pixel
-                continuarSinDibujoHorizontal:
-                INC CX ; Incrementar CX (columna)
-
-                MOV AX, CX ; Mueve a AX la CX (columna)
-                SUB AX, naveX ; CX - naveX (Posicion X de la nave)
-                CMP AX, naveLargo ; Comparar para ver si la resta anterior es mayor al largo de la nave
-                JBE dibujarNaveHorizontal ; Si no es mayor, entonces dibuja otro pixel
-
-            MOV CX, naveX ; Restablecer la columna en la posicion inicial (X)
-            INC DX ; Incrementar DX (siguiente fila)
-            MOV AX, DX ; Mueve a AX la DX (fila)
-            SUB AX, naveY ; DX - naveY (Posicion Y de la nave)
-            CMP AX, naveAncho ; Comparar para ver si la resta anterior es mayor al ancho de la nave
-            JBE dibujarNaveHorizontal ; Si no es mayor, entonces dibuja otra linea de pixeles
-            
-            ; Dibujar la pistola de la nave:
-
-            MOV CX, naveX ; CX = Columna (X)
-            MOV DX, naveY ; DX = Fila (Y)
-            DEC DX ; Decrementar DX (Una fila más arriba)
-            ADD CX, 5 ; Sumar 4 a la columna (Mover a la derecha 4 pixeles)
-
-            dibujarNavePistola:
-                MOV AH, 0Ch ; Configurar para escribir un pixel
-                MOV AL, 05h ; Morado para el color del pixel
-                MOV BH, 00h ; Numero de pagina (0 es la actual)
-
-                INT 10h ; Dibujar pixel
-                INC CX ; Incrementar CX (columna)
-
-                MOV AX, CX ; Mueve a AX la CX (columna)
-                SUB AX, naveX ; CX - naveX (Posicion X de la nave)
-                CMP AX, 07h ; Comparar para ver si la resta anterior es mayor a 8
-                JBE dibujarNavePistola ; Si no es mayor, entonces dibuja otro pixel
-            
-            ; Dibujar el último pixel de la pistola
-            MOV CX, naveX ; CX = Columna (X)
-            MOV DX, naveY ; DX = Fila (Y)
-            SUB DX, 2 ; Restar 2 a la fila (Dos filas más arriba)
-            ADD CX, 6 ; Sumar 4 a la columna (Mover a la derecha 4 pixeles)
-            
             MOV AH, 0Ch ; Configurar para escribir un pixel
             MOV AL, 05h ; Morado para el color del pixel
             MOV BH, 00h ; Numero de pagina (0 es la actual)
             INT 10h ; Dibujar pixel
+            
+            INC DX ; Incrementar DX (Una fila abajo)
+            DEC CX ; Decrementar CX (Una columna atrás)
+
+            segundaFila:
+                INT 10h ; Dibujar pixel
+                MOV BX, naveX ; Mover a BX la columna (X)
+                INC BX ; Incrementar BX (Una columna adelante)
+                CMP CX, BX ; Comparar si la columna actual es igual a la columna de la nave sumada
+                INC CX ; Incrementar CX (Una columna adelante)
+                JBE segundaFila ; Si es menor o igual, entonces continuar con la segunda fila
+
+            INC DX ; Incrementar DX (Una fila abajo)
+            ADD CX, 3 ; Sumar 3 a CX (3 columnas adelante)
+
+            terceraFila:
+                INT 10h ; Dibujar pixel
+                MOV BX, naveX ; Mover a BX la columna (X)
+                SUB BX, 4 ; Restar 4 a BX (4 columnas atrás)
+                CMP CX, BX ; Comparar si la columna actual es igual a la columna de la nave restada
+                DEC CX ; Decrementar CX (Una columna atrás)
+                JAE terceraFila ; Si es mayor o igual, entonces continuar con las otras filas
+
+            INC DX ; Incrementar DX (Una fila abajo)
+            JMP otrasFilas
+
+            antesOtrasFilas:
+                INC DX ; Incrementar DX (Una fila abajo)
+                SUB CX, 13 ; Restar 13 a CX (13 columnas atrás)
+            otrasFilas:
+                INT 10h ; Dibujar pixel
+                MOV BX, naveX ; Mover a BX la columna (X)
+                ADD BX, 6 ; Sumar 6 a BX (6 columnas adelante)
+                CMP CX, BX ; Comparar si la columna actual es igual a la columna de la nave sumada
+                INC CX ; Incrementar CX (Una columna adelante)
+                JBE otrasFilas ; Si es menor o igual, entonces continuar con las otras filas
+
+                MOV BX, naveY ; Mover a BX la fila (Y)
+                ADD BX, 3 ; Sumar 5 a BX (5 filas abajo)
+                CMP DX, BX ; Comparar si la fila actual es igual a la fila de la nave sumada
+                JBE antesOtrasFilas ; Si es menor o igual, entonces continuar con las otras filas
 
             RET ; Retornar procedimiento
         dibujarNave ENDP
