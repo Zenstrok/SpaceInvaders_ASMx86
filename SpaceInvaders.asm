@@ -17,7 +17,7 @@ direccionMovimientoAliens DB 0 ; Direccion del movimiento de los aliens (0 = Der
 numeroRandom DB 0 ; Numero aleatorio para el disparo de los aliens
 
 ;******** VARIABLES AUX ********
-vidasNave DB 1 ; Vidas de la nave
+etiquetaVidas DB 03h, 03h, 03h, "$" ; Etiqueta para mostrar las vidas de la nave
 tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya pasó cierto tiempo)
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
 velocidadMovimientoAliens DB 20 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 40 p.d
@@ -35,15 +35,14 @@ mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
     ; ENTRADAS: texto = Cadena a imprimir, x = Fila donde se va a imprimir, y = Columna donde se va a imprimir
     ; SALIDAS: Imprime en la posicion x,y el texto recibido
     imprimirCadena MACRO texto, x, y
-        mov AH, 02h
-        mov BH, 00d
-        mov DH, x
-        mov DL, y
-        int 10h
+        MOV AH, 02h
+        MOV DH, x
+        MOV DL, y
+        INT 10h
 
-        mov AH, 09h
-        lea DX, texto
-        int 21h
+        MOV AH, 09h
+        LEA DX, texto
+        INT 21h
     ENDM
 
     ; Macro para generar un número aleatorio entre 0 y un límite
@@ -308,10 +307,10 @@ mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
 
             ADD AH, 4 ; Sumar 4 a la Y de la nave
             CMP BH, AH ; Comparar si la fila (Y) de la bala es igual a la de la nave + 4
-            JB seguirBucleVerificarColisionesAliens ; Si es mayor, continuar con el bucle
+            JA seguirBucleVerificarColisionesAliens ; Si es mayor, continuar con el bucle
 
-            SUB BH, AH ; Restar (la fila de la nave + 4) - la fila del disparo
-            CMP BH, 4 ; Comparar si la resta anterior es menor o igual a 4 (Hitbox vertical de la nave)
+            SUB AH, BH ; Restar (la fila de la nave + 4) - la fila del disparo
+            CMP AH, 4 ; Comparar si la resta anterior es menor o igual a 4 (Hitbox vertical de la nave)
             JA seguirBucleVerificarColisionesAliens ; Si es mayor, continuar con el bucle
 
             CMP AL, BL ; Comparar si la columna (X) del disparo es igual a la de la bala
@@ -321,18 +320,30 @@ mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
             ejecutarResta:
                 SUB AL, BL ; Restar la columna mayor - la columna menor
             
-            CMP AL, 3 ; Comparar si la resta anterior es menor o igual a 3 (Hitbox horizontal de la nave)
+            CMP AL, 6 ; Comparar si la resta anterior es menor o igual a 6 (Hitbox horizontal de la nave)
             JA seguirBucleVerificarColisionesAliens ; Si es mayor, entonces seguir con el siguiente disparo
 
-            MOV etiquetaPuntuacion[0], '!' ; Mover a la etiqueta el primer caracter de la puntuacion
             MOV arregloDisparosAliens[SI], 0 ; Eliminar disparo de alien
-            DEC vidasNave ; Eliminar una vida de nave
 
-            CMP vidasNave, 0 ; Comparar si las vidas de la nave son 0
-            JNE seguirBucleVerificarColisionesAliens ; Si no es 0, continuar con el bucle
+            MOV AL, etiquetaVidas[2] ; Mover a AL el tercer caracter de las vidas
+            CMP AL, 03h ; Comparar si las vidas son 3
+            JNE siguienteVida1 ; Si no es 3, entonces seguir con la siguiente vida
 
-            MOV variableVictoria, 2 ; Si es 0, entonces el jugador perdió
-            JMP salirVerificarColisionesAliens ; Salir de la verificacion de colisiones
+            MOV etiquetaVidas[2], 20h ; Poner un espacio en blanco en la tercera vida
+            JMP salirVerificarColisionesAliens
+
+            siguienteVida1:
+                MOV AL, etiquetaVidas[1] ; Mover a AL el segundo caracter de las vidas
+                CMP AL, 03h ; Comparar si las vidas son 3
+                JNE siguienteVida2 ; Si no es 3, entonces seguir con la siguiente vida
+
+                MOV etiquetaVidas[1], 20h ; Poner un espacio en blanco en la segunda vida
+                JMP salirVerificarColisionesAliens
+
+            siguienteVida2:
+                MOV etiquetaVidas[0], 20h ; Poner un espacio en blanco en la primera vida
+                MOV variableVictoria, 2 ; Si ya era la última vida, entonces el jugador perdió
+                JMP salirVerificarColisionesAliens ; Salir de la verificacion de colisiones
 
             seguirBucleVerificarColisionesAliens:
                 ADD SI, 2 ; Sumar 2 al indice del arreglo
@@ -481,6 +492,7 @@ mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
             CALL verificarColisiones ; Verificar las colisiones de bala
             CALL mostrarDisparosAliens ; Mostrar los disparos de los aliens
             imprimirCadena etiquetaPuntuacion, 1, 1 ; Llamar al macro para imprimir la puntuacion
+            imprimirCadena etiquetaVidas, 1, 30 ; Llamar al macro para imprimir las vidas
 
             JMP revisarTiempo
         RET
