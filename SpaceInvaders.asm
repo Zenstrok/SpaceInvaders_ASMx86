@@ -1,5 +1,6 @@
 .model small
-.stack 100h 
+.stack 100h
+INCLUDE macros.asm
 
 .data
 ;*********** ARREGLOS **********
@@ -20,7 +21,8 @@ numeroRandom DB 0 ; Numero aleatorio para el disparo de los aliens
 etiquetaVidas DB 03h, 03h, 03h, "$" ; Etiqueta para mostrar las vidas de la nave
 tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya pasó cierto tiempo)
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
-velocidadMovimientoAliens DB 20 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 40 p.d
+contadorVelocidadAliens DB 0 ; Contador para la velocidad de los aliens (Saber si debe acelerarse su movimiento)
+velocidadMovimientoAliens DB 19 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 39 p.d
 
 ;*********** PUNTOS ************
 variableVictoria DB 0 ; Variable para saber si el jugador ganó (1 = Ganó, 0 = No ganó aún, 2 = Perdió)
@@ -473,13 +475,27 @@ mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
             ; Verificar si se deben mover los aliens
             MOV AH, velocidadMovimientoAliens ; Mover el tiempo en que se deben mover los aliens a AH
             CMP contadorMovimientoAliens, AH ; Comparar si ya se deben mover los aliens
-            JNE noMoverAliens ; Si aún no llega a 40 el contador, no mover los aliens
+            JNE noMoverAliens ; Si el contador aún no llega al limite, no mover los aliens
+
+            ; Si se deben mover los aliens:
             CALL llamarMoverAliens ; Mover los aliens
             CALL dispararAlien ; Hacer que un alien dispare
             MOV contadorMovimientoAliens, 0 ; Resetear el contador de movimiento de aliens
 
+            CMP contadorVelocidadAliens, 10 ; Comparar si ya se debe acelerar el movimiento de los aliens (Si el contador llega a 10)
+            JNE noIncrementarVelocidadAliens ; Si no se debe acelerar, no hacer nada
+
+            CMP velocidadMovimientoAliens, 1 ; Comparar si la velocidad de movimiento de los aliens es 1
+            JE noMoverAliens ; Si es 1, no acelerar el movimiento de los aliens
+
+            ;Si se deben acelerar los aliens:
+            SUB velocidadMovimientoAliens, 2 ; Decrementar la velocidad de movimiento de los aliens
+            MOV contadorVelocidadAliens, 0 ; Resetear el contador de velocidad de los aliens
+            noIncrementarVelocidadAliens:
+                INC contadorVelocidadAliens ; Incrementar el contador de velocidad de los aliens
+                
             noMoverAliens:
-            INC contadorMovimientoAliens
+                INC contadorMovimientoAliens ; Incrementar el contador de movimiento de los aliens
 
             ; Demás acciones del juego
             CALL verificarPartida ; Ver si ya se ganó o perdió
@@ -494,7 +510,7 @@ mensajeDerrota DB "DERROTA!", "$" ; Mensaje de derrota
             imprimirCadena etiquetaPuntuacion, 1, 1 ; Llamar al macro para imprimir la puntuacion
             imprimirCadena etiquetaVidas, 1, 30 ; Llamar al macro para imprimir las vidas
 
-            JMP revisarTiempo
+            JMP revisarTiempo ; Volver a otro ciclo
         RET
 
         ;***************** FIN CICLO DE JUEGO *****************
