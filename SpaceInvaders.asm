@@ -35,7 +35,6 @@ tituloJuego DB "SPACE INVADERS", "$"
 opcionIniciar DB "(Y) JUGAR", "$"
 opcionSalir DB "(N) SALIR", "$" 
 opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
-primeraPartida DB 1 ; Variable para controlar si es la primera partida (1 = Sí, 0 = No)
 
 .code
 ;***************** FUNCIONES (MACROS) ****************
