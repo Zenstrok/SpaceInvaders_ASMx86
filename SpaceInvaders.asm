@@ -3,9 +3,9 @@
 
 .data
 ;*********** ARREGLOS **********
-arregloAliens1 DW 0000h, 1532h, 1542h, 1552h, 1562h, 1572h, 1582h, 1592h, 15A2h, 0000h ; Arreglo de aliens 1 (Primera fila)
+arregloAliens1 DW 1522h, 1532h, 1542h, 1552h, 1562h, 1572h, 1582h, 1592h, 15A2h, 15B2h ; Arreglo de aliens 1 (Primera fila)
 arregloAliens2 DW 2322h, 2332h, 2342h, 2352h, 2362h, 2372h, 2382h, 2392h, 23A2h, 23B2h, 3122h, 3132h, 3142h, 3152h, 3162h, 3172h, 3182h, 3192h, 31A2h, 31B2h ; Arreglo de aliens 2 (Segunda y tercera fila)
-arregloAliens3 DW 3F22h, 3F32h, 3F42h, 3F52h, 3F62h, 3F72h, 3F82h, 3F92h, 3FA2h, 3FB2h, 0000h, 4D32h, 4D42h, 4D52h, 4D62h, 4D72h, 4D82h, 4D92h, 4DA2h, 0000h ; Arreglo de aliens 3 (Cuarta y quinta fila)
+arregloAliens3 DW 3F22h, 3F32h, 3F42h, 3F52h, 3F62h, 3F72h, 3F82h, 3F92h, 3FA2h, 3FB2h, 4D22h, 4D32h, 4D42h, 4D52h, 4D62h, 4D72h, 4D82h, 4D92h, 4DA2h, 4DB2h ; Arreglo de aliens 3 (Cuarta y quinta fila)
 arregloDisparos DW 4 DUP(0) ; Arreglo de disparos
 arregloDisparosAliens DW 6 DUP(0) ; Arreglo de disparos de los aliens
 
@@ -21,13 +21,21 @@ etiquetaVidas DB 03h, 03h, 03h, "$" ; Etiqueta para mostrar las vidas de la nave
 tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya pasó cierto tiempo)
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
 contadorVelocidadAliens DB 0 ; Contador para la velocidad de los aliens (Saber si debe acelerarse su movimiento)
-velocidadMovimientoAliens DB 19 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 39 p.d
+velocidadMovimientoAliens DB 31 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 31 p.d
 
 ;*********** PUNTOS ************
 variableVictoria DB 0 ; Variable para saber si el jugador ganó (1 = Ganó, 0 = No ganó aún, 2 = Perdió)
 etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
 mensajeVictoria DB "HAS GANADO!", "$" ; Mensaje de victoria
 mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
+mensajeDespedida DB "GRACIAS POR JUGAR", "$" ; Mensaje de despedida
+
+;****** OPCIONES DE JUEGO ******
+tituloJuego DB "SPACE INVADERS", "$"
+opcionIniciar DB "(Y) JUGAR", "$"
+opcionSalir DB "(N) SALIR", "$" 
+opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
+primeraPartida DB 1 ; Variable para controlar si es la primera partida (1 = Sí, 0 = No)
 
 .code
 ;***************** FUNCIONES (MACROS) ****************
@@ -146,6 +154,10 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
             ADD BH, 4 ; Sumar 2 a la fila (Mover hacia abajo 2 pixeles)
             MOV arregloAliensBajar[SI], BX ; Guardar la nueva posicion del alien en el arreglo
 
+            CMP BH, 0096h ; Comparar si la fila del alien es igual a 00A6h (Limite inferior para los aliens)
+            JNA seguirBucleBajarAliens ; Si no es el limite, continuar con el siguiente alien
+            MOV variableVictoria, 2 ; Si llega al limite, entonces el jugador perdió
+
         seguirBucleBajarAliens:
             ADD SI, 2 ; Sumar 2 al indice del arreglo (Siguiente alien)
             JMP bucleBajarAliens
@@ -187,7 +199,7 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
     ; SALIDAS: Verifica las colisiones de las balas con los aliens y elimina los que colisionan
     colisionesBalasConAliens MACRO arregloAliensColisiones, cantidadAliensColisiones
         LOCAL bucleVerificarColisiones, seguirBucleVerificarColisiones, bucleVerificarColisionesAliens, seguirBucleVerificarColisionesAliens
-        LOCAL ejecutarResta, salirVerificarColisiones, sumarCincoPuntos, sumarDosPuntos, corregirPuntos, aplicarAjuste
+        LOCAL ejecutarResta, salirVerificarColisiones, sumarCincoPuntos, corregirPuntos, aplicarAjuste
 
         MOV SI, 0
         bucleVerificarColisiones:
@@ -236,11 +248,7 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
                 SUB AH, 30h ; Restar 30h a AH (Convertir de ASCII a número)
                 SUB AL, 30h ; Restar 30h a AL (Convertir de ASCII a número)
 
-                MOV CL, cantidadAliensColisiones ; Mover a AL la cantidad de aliens
-                CMP CL, 20 ; Comparar si la cantidad de aliens es 20
-                JNE sumarDosPuntos ; Si no es 20, sumar 2 puntos
-
-                ADD AL, 3 ; Si es 20, sumar 3 puntos
+                ADD AL, 2 ; Sumar 2 puntos
                 CMP AL, 10 ; Comparar si la puntuacion es mayor o igual a 10
                 JAE corregirPuntos ; Si es mayor o igual a 10, sumar 5 puntos
                 ADD AH, 30h ; Sumar 30h a AH (Convertir de número a ASCII)
@@ -248,16 +256,6 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
                 MOV etiquetaPuntuacion[0], AH ; Mover a la etiqueta el primer caracter de la puntuacion
                 MOV etiquetaPuntuacion[1], AL ; Mover a la etiqueta el segundo caracter de la puntuacion
                 JMP seguirBucleVerificarColisiones ; Continuar con el siguiente alien
-
-                sumarDosPuntos:
-                    ADD AL, 2 ; Sumar 2 puntos
-                    CMP AL, 10 ; Comparar si la puntuacion es mayor o igual a 10
-                    JAE corregirPuntos ; Si es mayor o igual a 10, sumar 5 puntos
-                    ADD AH, 30h ; Sumar 30h a AH (Convertir de número a ASCII)
-                    ADD AL, 30h ; Sumar 30h a AL (Convertir de número a ASCII)
-                    MOV etiquetaPuntuacion[0], AH ; Mover a la etiqueta el primer caracter de la puntuacion
-                    MOV etiquetaPuntuacion[1], AL ; Mover a la etiqueta el segundo caracter de la puntuacion
-                    JMP seguirBucleVerificarColisiones ; Continuar con el siguiente alien
 
                 corregirPuntos:
                     SUB AL, 10 ; Restar 10 a AL
@@ -437,6 +435,48 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
         INT 10h
     ENDM
 
+    ; Macro para reiniciar un arreglo de aliens
+    ; ENTRADAS: arregloReiniciar = Arreglo a reiniciar, primerElemento = Primer valor del arreglo, cantidadReiniciar = Cantidad de aliens en el arreglo
+    ; SALIDAS: Reinicia un arreglo de aliens
+    reiniciarArregloAliens MACRO arregloReiniciar, primerElemento, cantidadReiniciar
+        LOCAL bucleReiniciar, salirReiniciar, bajarFila, seguirBucleReiniciar
+        MOV SI, 0
+        MOV AX, primerElemento
+        bucleReiniciar:
+            CMP SI, cantidadReiniciar ; Comparar si la posicion actual del arreglo es la cantidad de aliens
+            JE salirReiniciar ; Si es la cantidad de aliens, salir del bucle
+            CMP SI, 20 ; Comparar si la posicion actual del arreglo es 20
+            JE bajarFila ; Si es 20, entonces bajar una fila
+            seguirBucleReiniciar:
+            MOV arregloReiniciar[SI], AX ; Guardar el primer elemento en el arreglo
+            ADD AX, 10h ; Sumar 10h al primer elemento
+            ADD SI, 2 ; Sumar 2 al indice del arreglo
+            JMP bucleReiniciar ; Volver al inicio del bucle
+        JMP salirReiniciar ; Salir del bucle
+
+        bajarFila:
+            ADD AH, 0Eh ; Sumar 0E00h al primer elemento
+            MOV AL, 22h ; Mover a AL el valor 22h
+            JMP seguirBucleReiniciar ; Continuar con el bucle
+        
+        salirReiniciar:
+    ENDM
+
+    ; Macro para reiniciar un arreglo de disparos
+    ; ENTRADAS: arregloReiniciar = Arreglo a reiniciar, cantidadReiniciar = Cantidad de disparos en el arreglo
+    ; SALIDAS: Reinicia un arreglo de disparos
+    reiniciarArregloDisparos MACRO arregloReiniciar, cantidadReiniciar
+        LOCAL bucleReiniciar, salirReiniciar
+        MOV SI, 0
+        bucleReiniciar:
+            CMP SI, cantidadReiniciar ; Comparar si la posicion actual del arreglo es la cantidad de disparos
+            JE salirReiniciar ; Si es la cantidad de disparos, salir del bucle
+            MOV arregloReiniciar[SI], 0000h ; Reiniciar la posicion del disparo
+            ADD SI, 2 ; Sumar 2 al indice del arreglo
+            JMP bucleReiniciar ; Volver al inicio del bucle
+        salirReiniciar:
+    ENDM
+
     ;*************** FIN FUNCIONES (MACROS) **************
     ; PROCEDIMIENTO PRINCIPAL
     main PROC FAR
@@ -454,11 +494,8 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
 
         ;*********** FIN DE ASIGNACION DE SEGMENTOS ***********
 
-        ;*************** CONFIGURACION DE VIDEO ***************
-
         CALL limpiarPantalla ; Limpiar la pantalla (En negro)
-
-        ;************ FIN DE CONFIGURACION DE VIDEO ***********
+        CALL pantallaInicio ; Llamar al procedimiento de la pantalla de inicio
 
         ;******************* CICLO DE JUEGO *******************
         revisarTiempo:
@@ -502,8 +539,20 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
             CALL dibujarMarco ; Dibujar el marco de juego
             CALL dibujarNave ; Dibujar la nave
             CALL mostrarDisparos ; Mostrar los disparos guardados
-            CALL llamarMostrarAliens ; Mostrar todos los aliens
-            CALL verificarColisiones ; Verificar las colisiones de bala
+
+            ;****************** MOSTRAR ALIENS ********************
+            mostrarAliens arregloAliens1, 20 ; Mostrar los aliens de la primera fila
+            mostrarAliens arregloAliens2, 40 ; Mostrar los aliens de la segunda y tercera fila
+            mostrarAliens arregloAliens3, 40 ; Mostrar los aliens de la cuarta y quinta fila
+            ;**************** FIN MOSTRAR ALIENS ******************
+            
+            ;*************** VERIFICAR COLISIONES *****************
+            colisionesBalasConAliens arregloAliens1, 20 ; Verificar colisiones con los aliens de la primera fila
+            colisionesBalasConAliens arregloAliens2, 40 ; Verificar colisiones con los aliens de la segunda y tercera fila
+            colisionesBalasConAliens arregloAliens3, 40 ; Verificar colisiones con los aliens de la cuarta y quinta fila
+            colisionesBalasConNave ; Verificar colisiones con la nave
+            ;************* FIN VERIFICAR COLISIONES ***************
+            
             CALL mostrarDisparosAliens ; Mostrar los disparos de los aliens
             imprimirCadena etiquetaPuntuacion, 1, 1 ; Llamar al macro para imprimir la puntuacion
             imprimirCadena etiquetaVidas, 1, 30 ; Llamar al macro para imprimir las vidas
@@ -512,6 +561,10 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
         RET
 
         ;***************** FIN CICLO DE JUEGO *****************
+
+
+        ;***************!! PROCEDIMIENTOS !!*******************
+
 
         ;****************** LIMPIAR PANTALLA ******************
 
@@ -531,6 +584,140 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
 
         ;**************** FIN LIMPIAR PANTALLA ****************
 
+
+        ;****************** PANTALLA INICIO *******************
+        pantallaInicio PROC NEAR
+            CALL limpiarPantalla ; Limpiar la pantalla
+
+            imprimirCadena tituloJuego, 5, 10 ; Imprimir el título del juego
+            imprimirCadena opcionIniciar, 10, 8 ; Imprimir la opción "Iniciar a jugar"
+            imprimirCadena opcionSalir, 12, 8 ; Imprimir la opción "Salir del juego"
+
+            ; Esperar a que el usuario presione una tecla
+            esperarTecla:
+                MOV AH, 01h ; Función para verificar si hay una tecla presionada
+                INT 16h ; Llamada a la interrupción del BIOS
+                JZ esperarTecla ; Si no se presionó ninguna tecla, volver a esperar
+
+                ; Leer la tecla presionada
+                MOV AH, 00h ; Función para leer la tecla presionada
+                INT 16h ; Llamada a la interrupción del BIOS
+
+                ; Verificar qué tecla se presionó
+                CMP AL, 'Y'
+                JE iniciarJuego
+                CMP AL, 'y'
+                JE iniciarJuego
+                CMP AL, 'N'
+                JE salirJuego
+                CMP AL, 'n'
+                JE salirJuego
+                JMP pantallaInicio ; Si no se presionó una tecla válida, volver a mostrar la pantalla de inicio
+
+            iniciarJuego:
+                RET ; Retornar al procedimiento que lo llamó
+
+            salirJuego:
+                MOV AH, 4Ch ; Función para terminar el programa
+                INT 21h ; Llamada a la interrupción del DOS
+
+            RET ; Retornar al procedimiento que lo llamó
+        pantallaInicio ENDP
+
+        ;**************** FIN PANTALLA INICIO *****************
+
+        ;****************** PANTALLA FINAL ********************
+
+        pantallaFinal PROC NEAR
+            CALL limpiarPantalla ; Limpiar la pantalla
+
+            CMP variableVictoria, 1 ; Verificar si el jugador ganó
+            JE mostrarVictoria
+
+            ; Mostrar pantalla de derrota
+            imprimirCadena mensajeDerrota, 5, 12 ; Imprimir el mensaje de derrota
+            JMP mostrarOpciones
+
+            mostrarVictoria:
+                imprimirCadena mensajeVictoria, 5, 12 ; Imprimir el mensaje de victoria
+
+            mostrarOpciones:
+                imprimirCadena opcionVolverAJugar, 10, 8 ; Imprimir la opción de volver a jugar
+                imprimirCadena opcionSalir, 12, 8 ; Imprimir la opción de salir del programa
+
+                ; Esperar a que el usuario presione una tecla
+                esperarTeclaFinal:
+                    MOV AH, 01h ; Función para verificar si hay una tecla presionada
+                    INT 16h ; Llamada a la interrupción del BIOS
+                    JZ esperarTeclaFinal ; Si no se presionó ninguna tecla, volver a esperar
+
+                    ; Leer la tecla presionada
+                    MOV AH, 00h ; Función para leer la tecla presionada
+                    INT 16h ; Llamada a la interrupción del BIOS
+
+                    ; Verificar qué tecla se presionó
+                    CMP AL, 'Y'
+                    JE reiniciarJuego
+                    CMP AL, 'y'
+                    JE reiniciarJuego
+                    CMP AL, 'N'
+                    JE salirJuegov
+                    CMP AL, 'n'
+                    JE salirJuegov
+                    JMP pantallaFinal ; Si no se presionó una tecla válida, volver a mostrar la pantalla final
+    
+            reiniciarJuego:
+                CALL reiniciarVariables ; Reiniciar las variables del juego
+                CALL main ; Llamar al procedimiento principal para iniciar un nuevo juego
+                RET ; Retornar al procedimiento que lo llamó
+
+            salirJuegov:
+                CALL limpiarPantalla ; Limpiar la pantalla
+                imprimirCadena mensajeDespedida, 5, 12 ; Imprimir el mensaje de despedida
+                MOV AH, 4Ch ; Función para terminar el programa
+                INT 21h ; Llamada a la interrupción del DOS
+
+            RET ; Retornar al procedimiento que lo llamó
+        pantallaFinal ENDP
+
+        ;**************** FIN PANTALLA FINAL ******************
+
+        ;*************** REINICIAR VARIABLES ******************
+
+        reiniciarVariables PROC NEAR
+            ; Reiniciar las variables del juego a sus valores iniciales
+            MOV naveX, 00A0h ; Posición X inicial de la nave
+            MOV naveY, 00BEh ; Posición Y inicial de la nave
+            MOV controlarAliensX, 0 ; Reiniciar el control de movimiento de los aliens
+            MOV direccionMovimientoAliens, 0 ; Reiniciar la dirección de movimiento de los aliens
+            MOV numeroRandom, 0 ; Reiniciar el número random
+            MOV tiempoAuxiliar, 0 ; Reiniciar el tiempo auxiliar
+            MOV contadorMovimientoAliens, 0 ; Reiniciar el contador de movimiento de los aliens
+            MOV contadorVelocidadAliens, 0 ; Reiniciar el contador de velocidad de los aliens
+            MOV velocidadMovimientoAliens, 19 ; Reiniciar la velocidad de movimiento de los aliens
+            MOV variableVictoria, 0 ; Reiniciar la variable de victoria
+            MOV etiquetaPuntuacion[0], '0' ; Reiniciar la puntuación
+            MOV etiquetaPuntuacion[1], '0'
+
+            ; Reiniciar las vidas
+            MOV etiquetaVidas[0], 03h
+            MOV etiquetaVidas[1], 03h
+            MOV etiquetaVidas[2], 03h
+
+            ; Reiniciar los arreglos
+            reiniciarArregloAliens arregloAliens1, 1522h, 20
+            reiniciarArregloAliens arregloAliens2, 2322h, 40
+            reiniciarArregloAliens arregloAliens3, 3F22h, 40
+
+            ; Reiniciar los disparos
+            reiniciarArregloDisparos arregloDisparos, 4
+            reiniciarArregloDisparos arregloDisparosAliens, 6
+
+            RET ; Retornar procedimiento
+        reiniciarVariables ENDP
+
+        ;************* FIN REINICIAR VARIABLES ****************
+        
         ;******************** DIBUJAR MARCO *******************
 
         ; Procedimiento para dibujar un marco divisor en la zona de juego
@@ -557,24 +744,18 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
         ;****************** FIN DIBUJAR MARCO *****************
 
         verificarPartida PROC NEAR
-            CMP variableVictoria, 1 ; Si ganó
-            JE imprimirVictoria ; Imprimir mensaje de victoria
-            CMP variableVictoria, 2 ; Si perdió
-            JE imprimirDerrota ; Imprimir mensaje de derrota
+            CMP variableVictoria, 1 ; Verificar si el jugador ganó
+            JE imprimirResultado ; Si ganó, mostrar la pantalla final
+            CMP variableVictoria, 2 ; Verificar si el jugador perdió
+            JE imprimirResultado ; Si perdió, mostrar la pantalla final
             JNE finalizarVerificacion ; Si no ha ganado ni perdido, continuar con el juego
 
-            imprimirVictoria:
-                CALL limpiarPantalla ; Limpiar la pantalla
-                imprimirCadena mensajeVictoria, 10, 12 ; Imprimir mensaje de victoria
-                JMP finalizarPrograma ; Salir del programa
-            
-            imprimirDerrota:
-                CALL limpiarPantalla ; Limpiar la pantalla
-                imprimirCadena mensajeDerrota, 10, 12 ; Imprimir mensaje de derrota
-                JMP finalizarPrograma ; Salir del programa
+            imprimirResultado:
+                CALL pantallaFinal ; Llamar a la pantalla final (victoria o derrota)
+                JMP finalizarPrograma ; Salir del programa después de mostrar la pantalla final
 
             finalizarVerificacion:
-                RET ; Retornar procedimiento
+                RET ; Retornar al procedimiento que lo llamó
         verificarPartida ENDP
 
         ;******************** ACCIONAR NAVE *******************
@@ -796,33 +977,6 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
 
         ;*********** FIN MOSTRAR DISPAROS ALIENS **************
 
-        ;****************** MOSTRAR ALIENS ********************
-
-        ; Procedimiento para imprimir todos los aliens que estén vivos
-        ; SALIDAS: Imprime en pantalla todos los aliens vivos
-        llamarMostrarAliens PROC NEAR
-            mostrarAliens arregloAliens1, 20 ; Mostrar los aliens de la primera fila
-            mostrarAliens arregloAliens2, 40 ; Mostrar los aliens de la segunda y tercera fila
-            mostrarAliens arregloAliens3, 40 ; Mostrar los aliens de la cuarta y quinta fila
-            RET ; Retornar procedimiento
-        llamarMostrarAliens ENDP
-
-        ;**************** FIN MOSTRAR ALIENS ******************
-
-        ;*************** VERIFICAR COLISIONES *****************
-
-        ; Procedimiento para verificar si un disparo colisiona con un alien
-        ; SALIDAS: Verifica si un disparo colisiona con un alien y lo elimina
-        verificarColisiones PROC NEAR
-            colisionesBalasConAliens arregloAliens1, 20 ; Verificar colisiones con los aliens de la primera fila
-            colisionesBalasConAliens arregloAliens2, 40 ; Verificar colisiones con los aliens de la segunda y tercera fila
-            colisionesBalasConAliens arregloAliens3, 40 ; Verificar colisiones con los aliens de la cuarta y quinta fila
-            colisionesBalasConNave ; Verificar colisiones con la nave
-            RET ; Retornar procedimiento
-        verificarColisiones ENDP
-
-        ;************* FIN VERIFICAR COLISIONES ***************
-
         ;****************** DISPARAR ALIEN ********************
 
         ; Procedimiento para disparar un alien aleatorio
@@ -925,7 +1079,7 @@ mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
         llamarMoverAliens ENDP
 
         ;**************** FIN MOVER ALIENS ********************
-
+        
         finalizarPrograma:
             MOV AH, 4Ch ; Salir del programa
             INT 21h ; Ejecutar la configuracion
