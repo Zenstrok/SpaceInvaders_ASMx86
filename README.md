@@ -6,6 +6,7 @@ Este es un proyecto del mítico juego "Space Invaders", recreándolo en ensambla
 
 ### Aspectos de Jugabilidad
 - Movimiento: A = Izquierda, D = Derecha, Espacio = Disparar
+- Opciones: Y = Aceptar, N = Rechazar
 - Vidas de la nave: 3
 - Vidas de las casas: 8
 - Puntuación: 2 puntos por cada alien eliminado
