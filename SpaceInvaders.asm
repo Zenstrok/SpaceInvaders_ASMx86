@@ -1,5 +1,9 @@
 ;********************** SPACE INVADERS x86 **********************
 ;                                                               *
+; Autor: Jose Mario Jiménez Vargas (Zenstrok)                   *
+;                                                               *
+;****************************************************************
+;                                                               *
 ; Movimiento: A = Izquierda, D = Derecha, Espacio = Disparar    *
 ; Vidas de la nave: 3                                           *
 ; Vidas de las casas: 8                                         *
