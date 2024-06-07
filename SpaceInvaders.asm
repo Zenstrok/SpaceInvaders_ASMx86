@@ -30,6 +30,8 @@ naveX DW 00A0h ; Posicion X inicial (Columna) de la nave
 naveY DW 00BEh ; Posicion Y inicial (Fila) de la nave
 controlarAliensX DB 0 ; Controlar la posicion X de los aliens (Para saber cuándo deben cambiar de dirección)
 direccionMovimientoAliens DB 0 ; Direccion del movimiento de los aliens (0 = Derecha, 1 = Izquierda)
+AuxCasa1 DW 0000h ; Auxiliar para dibujar una casa
+AuxCasa2 DW 0000h ; Auxiliar para dibujar una casa
 numeroRandom DB 0 ; Numero aleatorio para el disparo de los aliens
 
 ;******** VARIABLES AUX ********
@@ -38,21 +40,19 @@ tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
 contadorVelocidadAliens DB 0 ; Contador para la velocidad de los aliens (Saber si debe acelerarse su movimiento)
 velocidadMovimientoAliens DB 29 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 29 p.d
-AuxCasa1 DW 0000h
-AuxCasa2 DW 0000h
 
 ;*********** PUNTOS ************
 variableVictoria DB 0 ; Variable para saber si el jugador ganó (1 = Ganó, 0 = No ganó aún, 2 = Perdió)
 etiquetaPuntuacion DB "00", "$" ; Etiqueta para mostrar la puntuacion
+
+;****** OPCIONES DE JUEGO ******
+tituloJuego DB "SPACE INVADERS", "$" ; Titulo del juego
+opcionIniciar DB "(Y) JUGAR", "$" ; Opcion para iniciar el juego
+opcionSalir DB "(N) SALIR", "$" ; Opcion para salir del juego
+opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$" ; Opcion para volver a jugar
 mensajeVictoria DB "HAS GANADO!", "$" ; Mensaje de victoria
 mensajeDerrota DB "HAS PERDIDO!", "$" ; Mensaje de derrota
 mensajeDespedida DB "GRACIAS POR JUGAR", "$" ; Mensaje de despedida
-
-;****** OPCIONES DE JUEGO ******
-tituloJuego DB "SPACE INVADERS", "$"
-opcionIniciar DB "(Y) JUGAR", "$"
-opcionSalir DB "(N) SALIR", "$" 
-opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
 
 .code
 ;***************** FUNCIONES (MACROS) ****************
