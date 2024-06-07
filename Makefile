@@ -1,33 +1,31 @@
-# Nombre del archivo de salida
-TARGET = SpaceInvaders.exe
+# Makefile para compilar programas en MASM x86
 
-# Archivo fuente
-SRC = SpaceInvaders.asm
+# Nombre del ejecutable a generar
+TARGET = programa.exe
 
-# Archivo objeto generado por MASM
-OBJ = SpaceInvaders.obj
+# Directorios de los archivos fuente y objeto
+SRC_DIR = src
+OBJ_DIR = obj
 
-# Compilador y enlazador
-ASM = ml
-LINKER = link
+# Lista de archivos fuente (assembler)
+SOURCES = $(wildcard $(SRC_DIR)/*.asm)
 
-# Opciones del compilador
-ASMFLAGS = /c /coff
+# Lista de archivos objeto generados
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.obj)
 
-# Opciones del enlazador
-LINKFLAGS = /SUBSYSTEM:CONSOLE
+# Opciones de compilación
+MASM = ml.exe
+MASM_FLAGS = /c /Fo$(OBJ_DIR)/
 
-# Regla por defecto
-all: $(TARGET)
+# Regla para generar el ejecutable
+$(TARGET): $(OBJECTS)
+    link.exe /OUT:$(TARGET) $(OBJECTS)
 
-# Regla para crear el archivo objeto
-$(OBJ): $(SRC)
-	$(ASM) $(ASMFLAGS) $(SRC)
+# Regla para compilar cada archivo fuente
+$(OBJ_DIR)/%.obj: $(SRC_DIR)/%.asm
+    $(MASM) $(MASM_FLAGS) $<
 
-# Regla para crear el ejecutable
-$(TARGET): $(OBJ)
-	$(LINKER) $(LINKFLAGS) $(OBJ) /OUT:$(TARGET)
-
-# Limpieza de archivos intermedios
+# Regla para limpiar archivos generados
 clean:
-	del $(OBJ) $(TARGET)
+    del /Q $(OBJ_DIR)\*.obj
+    del /Q $(TARGET)

@@ -928,7 +928,6 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
 
             imprimirResultado:
                 CALL pantallaFinal ; Llamar a la pantalla final (victoria o derrota)
-                JMP finalizarPrograma ; Salir del programa después de mostrar la pantalla final
 
             finalizarVerificacion:
                 RET ; Retornar al procedimiento que lo llamó
