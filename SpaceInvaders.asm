@@ -1,13 +1,25 @@
+;********************** SPACE INVADERS x86 **********************
+;                                                               *
+; Movimiento: A = Izquierda, D = Derecha, Espacio = Disparar    *
+; Vidas de la nave: 3                                           *
+; Vidas de las casas: 8                                         *
+; Puntuación: 2 puntos por cada alien eliminado                 *
+; Balas a la vez en pantalla: 2                                 *
+;                                                               *
+;****************************************************************
+
 .model small
 .stack 100h
 
 .data
 ;*********** ARREGLOS **********
-arregloAliens1 DW 1522h, 1532h, 1542h, 1552h, 1562h, 1572h, 1582h, 1592h, 15A2h, 15B2h ; Arreglo de aliens 1 (Primera fila)
-arregloAliens2 DW 2322h, 2332h, 2342h, 2352h, 2362h, 2372h, 2382h, 2392h, 23A2h, 23B2h, 3122h, 3132h, 3142h, 3152h, 3162h, 3172h, 3182h, 3192h, 31A2h, 31B2h ; Arreglo de aliens 2 (Segunda y tercera fila)
-arregloAliens3 DW 3F22h, 3F32h, 3F42h, 3F52h, 3F62h, 3F72h, 3F82h, 3F92h, 3FA2h, 3FB2h, 4D22h, 4D32h, 4D42h, 4D52h, 4D62h, 4D72h, 4D82h, 4D92h, 4DA2h, 4DB2h ; Arreglo de aliens 3 (Cuarta y quinta fila)
+arregloAliens1 DW 1A20h, 1A30h, 1A40h, 1A50h, 1A60h, 1A70h, 1A80h, 1A90h, 1AA0h, 1AB0h ; Arreglo de aliens 1 (Primera fila)
+arregloAliens2 DW 2820h, 2830h, 2840h, 2850h, 2860h, 2870h, 2880h, 2890h, 28A0h, 28B0h, 3620h, 3630h, 3640h, 3650h, 3660h, 3670h, 3680h, 3690h, 36A0h, 36B0h ; Arreglo de aliens 2 (Segunda y tercera fila)
+arregloAliens3 DW 4420h, 4430h, 4440h, 4450h, 4460h, 4470h, 4480h, 4490h, 44A0h, 44B0h, 5220h, 5230h, 5240h, 5250h, 5260h, 5270h, 5280h, 5290h, 52A0h, 52B0h ; Arreglo de aliens 3 (Cuarta y quinta fila)
+arregloCasas DW 0A03Ah, 0A072h, 0A0AAh, 0A0E2h ; Arreglo de casas
 arregloDisparos DW 4 DUP(0) ; Arreglo de disparos
 arregloDisparosAliens DW 6 DUP(0) ; Arreglo de disparos de los aliens
+vidasCasas DW 0800h, 0800h, 0800h, 0800h ; Vidas de las casas
 
 ;********* CONTROL X, Y ********
 naveX DW 00A0h ; Posicion X inicial (Columna) de la nave
@@ -21,7 +33,9 @@ etiquetaVidas DB 03h, 03h, 03h, "$" ; Etiqueta para mostrar las vidas de la nave
 tiempoAuxiliar DB 0 ; Tiempo anterior para las acciones (Comparar para ver si ya pasó cierto tiempo)
 contadorMovimientoAliens DB 0 ; Contador para el movimiento de los aliens (Saber si ya deben moverse)
 contadorVelocidadAliens DB 0 ; Contador para la velocidad de los aliens (Saber si debe acelerarse su movimiento)
-velocidadMovimientoAliens DB 31 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 31 p.d
+velocidadMovimientoAliens DB 29 ; Velocidad en la que los aliens deben moverse (Entre más bajo, más rápido, 1 es el mínimo) 29 p.d
+AuxCasa1 DW 0000h
+AuxCasa2 DW 0000h
 
 ;*********** PUNTOS ************
 variableVictoria DB 0 ; Variable para saber si el jugador ganó (1 = Ganó, 0 = No ganó aún, 2 = Perdió)
@@ -40,12 +54,12 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
 ;***************** FUNCIONES (MACROS) ****************
 
     ; Macro para imprimir una cadena en pantalla
-    ; ENTRADAS: texto = Cadena a imprimir, x = Fila donde se va a imprimir, y = Columna donde se va a imprimir
+    ; ENTRADAS: texto = Cadena a imprimir, x = Columna donde se va a imprimir, y = Fila donde se va a imprimir
     ; SALIDAS: Imprime en la posicion x,y el texto recibido
-    imprimirCadena MACRO texto, x, y
+    imprimirCadena MACRO texto, y, x
         MOV AH, 02h
-        MOV DH, x
-        MOV DL, y
+        MOV DH, y
+        MOV DL, x
         INT 10h
 
         MOV AH, 09h
@@ -101,6 +115,28 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             CMP SI, 6 ; Comparar si el indice es 6
             JNE bucleGuardarDisparo ; Si no es 6, entonces sigue el bucle
         finGuardarDisparo:
+    ENDM
+
+    ; Macro para hacer que un alien dispare
+    dispararAlien MACRO arregloAliensDisparar, limiteRandom
+        LOCAL salirLlamarDispararAlien
+        generarNumeroRandom limiteRandom ; Generar un número aleatorio entre 0 y el limite
+        MOV AH, numeroRandom ; Mover a AH el número aleatorio
+        MOV AL, 2 ; Mover a AL el número 2
+        MUL AH ; Multiplicar el número aleatorio por 2
+        XOR AH, AH ; Limpiar AH
+
+        MOV SI, AX ; Mover a SI el número aleatorio
+        MOV BX, arregloAliensDisparar[SI] ; Mover a BX la posicion del alien
+        CMP BX, 0 ; Comparar si el alien está muerto
+        JE salirLlamarDispararAlien ; Si está muerto, volver a empezar
+
+        ; BH = Fila (Y) / BL = Columna (X)
+        ADD DX, 4 ; Sumar 4 a la fila (Cuatro filas más abajo)
+        guardarDisparoAlien BX ; Llamar al macro para guardar el disparo
+
+        salirLlamarDispararAlien:
+            RET ; Retornar procedimiento
     ENDM
 
     ; Macro para mover los aliens de un arreglo según la dirección del movimiento
@@ -349,7 +385,128 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
         salirVerificarColisionesAliens:
     ENDM
 
+    ; Macro para verificar las colisiones de las balas de la nave con las casas
+    ; SALIDAS: Verifica las colisiones de las balas de la nave con las casas y elimina las casas en caso de ser necesario
+    colisionesBalasNaveConCasas MACRO
+        LOCAL bucleBalas, bucleCasas, ejecutarResta, siguienteBala, siguienteCasa, salirNaveCasas
+        MOV SI, 0
+        bucleBalas:
+            CMP SI, 4 ; Comparar si la posicion actual del arreglo es 4
+            JE salirNaveCasas
+
+            MOV BX, arregloDisparos[SI] ; Mover a BX la posicion actual del disparo
+            CMP BX, 0 ; Comparar si la posicion actual del disparo es 0
+            JE siguienteBala
+
+            MOV DI, 0
+            bucleCasas:
+                CMP DI, 8 ; Comparar si la posicion actual del arreglo es 8
+                JE siguienteBala
+
+                MOV BX, arregloDisparos[SI] ; Mover a BX la posicion actual del disparo
+                MOV AX, arregloCasas[DI] ; Mover a AX la posicion actual de la casa
+
+                CMP AX, 0 ; Comparar si la casa está destruida
+                JE siguienteCasa
+
+                CMP BH, AH ; Comparar si la fila de la casa es igual a la del disparo
+                JB siguienteCasa
+                ADD AH, 3 ; Restar 3 a la fila de la casa
+                CMP BH, AH ; Comparar si la fila de la casa es mayor a la del disparo
+                JA siguienteCasa
+
+                CMP AL, BL
+                JAE ejecutarResta
+                XCHG AL, BL
+
+                ejecutarResta:
+                    SUB AL, BL ; Restar la columna mayor - la columna menor
+                
+                CMP AL, 13 ; Comparar si la resta anterior es menor o igual a 13 (Hitbox horizontal de la casa)
+                JA siguienteCasa
+
+                MOV arregloDisparos[SI], 0 ; Eliminar disparo
+                MOV AX, vidasCasas[DI] ; Mover a AL las vidas de la casa
+                DEC AH ; Decrementar las vidas de la casa
+                MOV vidasCasas[DI], AX ; Guardar las vidas de la casa
+                CMP AH, 0 ; Comparar si las vidas de la casa son 0
+                JNE siguienteBala ; Si no son 0, entonces seguir con la siguiente bala
+                MOV arregloCasas[DI], 0 ; Eliminar la casa
+                JMP siguienteBala ; Continuar con la siguiente bala
+
+                siguienteCasa:
+                    ADD DI, 2 ; Sumar 2 al indice del arreglo de casas
+                    JMP bucleCasas ; Volver al inicio del bucle
+
+            siguienteBala:
+                ADD SI, 2
+                JMP bucleBalas
+        
+        salirNaveCasas:
+    ENDM
+
+    ; Macro para verificar las colisiones de las balas de los aliens con las casas
+    ; SALIDAS: Verifica las colisiones de las balas de los aliens con las casas y elimina las casas en caso de ser necesario
+    colisionesBalasAliensConCasas MACRO 
+        LOCAL bucleBalas, bucleCasas, ejecutarResta, siguienteBala, siguienteCasa, salirAliensCasas
+        MOV SI, 0
+        bucleBalas:
+            CMP SI, 6 ; Comparar si la posicion actual del arreglo es 6
+            JE salirAliensCasas
+
+            MOV BX, arregloDisparosAliens[SI] ; Mover a BX la posicion actual del disparo
+            CMP BX, 0 ; Comparar si la posicion actual del disparo es 0
+            JE siguienteBala
+
+            MOV DI, 0
+            bucleCasas:
+                CMP DI, 8 ; Comparar si la posicion actual del arreglo es 8
+                JE siguienteBala
+
+                MOV BX, arregloDisparosAliens[SI] ; Mover a BX la posicion actual del disparo
+                MOV AX, arregloCasas[DI] ; Mover a AX la posicion actual de la casa
+
+                CMP AX, 0 ; Comparar si la casa está destruida
+                JE siguienteCasa
+
+                CMP BH, AH ; Comparar si la fila de la casa es igual a la del disparo
+                JB siguienteCasa
+                ADD AH, 3 ; Restar 3 a la fila de la casa
+                CMP BH, AH ; Comparar si la fila de la casa es mayor a la del disparo
+                JA siguienteCasa
+
+                CMP AL, BL
+                JAE ejecutarResta
+                XCHG AL, BL
+
+                ejecutarResta:
+                    SUB AL, BL ; Restar la columna mayor - la columna menor
+                
+                CMP AL, 13 ; Comparar si la resta anterior es menor o igual a 13 (Hitbox horizontal de la casa)
+                JA siguienteCasa
+
+                MOV arregloDisparosAliens[SI], 0 ; Eliminar disparo
+                MOV AX, vidasCasas[DI] ; Mover a AL las vidas de la casa
+                DEC AH ; Decrementar las vidas de la casa
+                MOV vidasCasas[DI], AX ; Guardar las vidas de la casa
+                CMP AH, 0 ; Comparar si las vidas de la casa son 0
+                JNE siguienteBala ; Si no son 0, entonces seguir con la siguiente bala
+                MOV arregloCasas[DI], 0 ; Eliminar la casa
+                JMP siguienteBala ; Continuar con la siguiente bala
+
+                siguienteCasa:
+                    ADD DI, 2 ; Sumar 2 al indice del arreglo de casas
+                    JMP bucleCasas ; Volver al inicio del bucle
+
+            siguienteBala:
+                ADD SI, 2
+                JMP bucleBalas
+        
+        salirAliensCasas:
+    ENDM
+
     ; Macro para dibujar el alien de la primera fila
+    ; ENTRADAS: Lee los valores de DX y CX (Fila y columna inciales)
     ; SALIDAS: Imprime en pantalla el alien de la primera fila según DX y CX
     dibujarAlien1 MACRO
         MOV AH, 0Ch ; Configurar para escribir un pixel
@@ -434,6 +591,39 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
         INT 10h
     ENDM
 
+    ; Macro para dibujar una casa en pantalla
+    ; ENTRADAS: Lee los valores de CX y DX (Columna y fila iniciales)
+    ; SALIDAS: Dibuja una casa en pantalla
+    dibujarCasa MACRO
+        LOCAL bucleCasa, terminarDibujoCasa
+        MOV AH, 0Ch ; Configurar para escribir un pixel
+        MOV AL, 01h ; Blanco para el color del pixel
+        MOV BH, 00h ; Numero de pagina (0 es la actual)
+
+        MOV BL, CL ; Mover a BL la columna (X) para el limite de pixeles
+        ADD BL, 11 ; Sumar 3 a BL (Dos columnas más adelante que la incial)
+        SUB CX, 10 ; Restar 2 a CX (Dos columnas atrás)
+        MOV AuxCasa1, CX
+        MOV AuxCasa2, 1 ; Mover la columna restada a la variable
+        bucleCasa:
+            INT 10h ; Dibujar pixel
+            INC CX ; Incrementar CX (Una columna adelante)
+            CMP CL, BL ; Comparar si la columna es igual al limite
+            JNE bucleCasa ; Si no es igual, continuar con el bucle
+
+            INC BL ; Incrementar límite
+            INC DX ; Incrementar DX (Una fila abajo)
+            CMP DX, 0A4h ; Comparar si la fila es igual a 0A4h (Limite de la casa)
+            JE terminarDibujoCasa
+
+            MOV CX, AuxCasa1 ; Mover a CX la columna inicial
+            SUB CX, AuxCasa2 ; Restar columnas a la columna inicial
+            INC AuxCasa2 ; Incrementar columnas a restar
+            JMP bucleCasa
+
+        terminarDibujoCasa:
+    ENDM
+
     ; Macro para reiniciar un arreglo de aliens
     ; ENTRADAS: arregloReiniciar = Arreglo a reiniciar, primerElemento = Primer valor del arreglo, cantidadReiniciar = Cantidad de aliens en el arreglo
     ; SALIDAS: Reinicia un arreglo de aliens
@@ -455,7 +645,7 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
 
         bajarFila:
             ADD AH, 0Eh ; Sumar 0E00h al primer elemento
-            MOV AL, 22h ; Mover a AL el valor 22h
+            MOV AL, 20h ; Mover a AL el valor 22h
             JMP seguirBucleReiniciar ; Continuar con el bucle
         
         salirReiniciar:
@@ -513,7 +703,7 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
 
             ; Si se deben mover los aliens:
             CALL llamarMoverAliens ; Mover los aliens
-            CALL dispararAlien ; Hacer que un alien dispare
+            CALL llamarDispararAlien ; Hacer que un alien dispare
             MOV contadorMovimientoAliens, 0 ; Resetear el contador de movimiento de aliens
 
             CMP contadorVelocidadAliens, 10 ; Comparar si ya se debe acelerar el movimiento de los aliens (Si el contador llega a 10)
@@ -531,13 +721,17 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             noMoverAliens:
                 INC contadorMovimientoAliens ; Incrementar el contador de movimiento de los aliens
 
-            ; Demás acciones del juego
+            ;**************** ACCIONES DEL JUEGO ******************
             CALL verificarPartida ; Ver si ya se ganó o perdió
             CALL accionarNave ; Recibir la accion para la nave
             CALL limpiarPantalla ; Limpiar la pantalla (En negro)
-            CALL dibujarMarco ; Dibujar el marco de juego
             CALL dibujarNave ; Dibujar la nave
             CALL mostrarDisparos ; Mostrar los disparos guardados
+            CALL mostrarCasas ; Mostrar las casas
+            CALL mostrarDisparosAliens ; Mostrar los disparos de los aliens
+            imprimirCadena etiquetaPuntuacion, 1, 1 ; Llamar al macro para imprimir la puntuacion
+            imprimirCadena etiquetaVidas, 1, 30 ; Llamar al macro para imprimir las vidas
+            ;************** FIN ACCIONES DEL JUEGO ****************
 
             ;****************** MOSTRAR ALIENS ********************
             mostrarAliens arregloAliens1, 20 ; Mostrar los aliens de la primera fila
@@ -550,20 +744,14 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             colisionesBalasConAliens arregloAliens2, 40 ; Verificar colisiones con los aliens de la segunda y tercera fila
             colisionesBalasConAliens arregloAliens3, 40 ; Verificar colisiones con los aliens de la cuarta y quinta fila
             colisionesBalasConNave ; Verificar colisiones con la nave
+            colisionesBalasNaveConCasas ; Verificar colisiones de las balas de la nave con las casas
+            colisionesBalasAliensConCasas ; Verificar colisiones de las balas de los aliens con las casas
             ;************* FIN VERIFICAR COLISIONES ***************
-            
-            CALL mostrarDisparosAliens ; Mostrar los disparos de los aliens
-            imprimirCadena etiquetaPuntuacion, 1, 1 ; Llamar al macro para imprimir la puntuacion
-            imprimirCadena etiquetaVidas, 1, 30 ; Llamar al macro para imprimir las vidas
 
             JMP revisarTiempo ; Volver a otro ciclo
         RET
 
         ;***************** FIN CICLO DE JUEGO *****************
-
-
-        ;***************!! PROCEDIMIENTOS !!*******************
-
 
         ;****************** LIMPIAR PANTALLA ******************
 
@@ -693,7 +881,9 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             MOV tiempoAuxiliar, 0 ; Reiniciar el tiempo auxiliar
             MOV contadorMovimientoAliens, 0 ; Reiniciar el contador de movimiento de los aliens
             MOV contadorVelocidadAliens, 0 ; Reiniciar el contador de velocidad de los aliens
-            MOV velocidadMovimientoAliens, 19 ; Reiniciar la velocidad de movimiento de los aliens
+            MOV velocidadMovimientoAliens, 29 ; Reiniciar la velocidad de movimiento de los aliens
+            MOV AuxCasa1, 0 ; Reiniciar la variable auxiliar de la casa
+            MOV AuxCasa2, 0 ; Reiniciar la variable auxiliar de la casa
             MOV variableVictoria, 0 ; Reiniciar la variable de victoria
             MOV etiquetaPuntuacion[0], '0' ; Reiniciar la puntuación
             MOV etiquetaPuntuacion[1], '0'
@@ -703,10 +893,20 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             MOV etiquetaVidas[1], 03h
             MOV etiquetaVidas[2], 03h
 
+            ; Reiniciar las casas
+            MOV arregloCasas[0], 0A03Ah
+            MOV arregloCasas[2], 0A072h
+            MOV arregloCasas[4], 0A0AAh
+            MOV arregloCasas[6], 0A0E2h
+            MOV vidasCasas[0], 0800h
+            MOV vidasCasas[2], 0800h
+            MOV vidasCasas[4], 0800h
+            MOV vidasCasas[6], 0800h
+
             ; Reiniciar los arreglos
-            reiniciarArregloAliens arregloAliens1, 1522h, 20
-            reiniciarArregloAliens arregloAliens2, 2322h, 40
-            reiniciarArregloAliens arregloAliens3, 3F22h, 40
+            reiniciarArregloAliens arregloAliens1, 1A20h, 20
+            reiniciarArregloAliens arregloAliens2, 2820h, 40
+            reiniciarArregloAliens arregloAliens3, 4420h, 40
 
             ; Reiniciar los disparos
             reiniciarArregloDisparos arregloDisparos, 4
@@ -716,31 +916,8 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
         reiniciarVariables ENDP
 
         ;************* FIN REINICIAR VARIABLES ****************
-        
-        ;******************** DIBUJAR MARCO *******************
 
-        ; Procedimiento para dibujar un marco divisor en la zona de juego
-        ; SALIDAS: Imprime en la pantalla el marco correspondiente
-        dibujarMarco PROC NEAR
-            MOV AH, 0Ch ; Configurar para escribir un pixel
-            MOV AL, 0Fh ; Blanco para el color del pixel
-            MOV BH, 00h ; Numero de pagina (0 es la actual)
-
-            MOV CX, 270
-            MOV DX, 196
-            bucleMarcoDerecho:
-                CMP DX, 12
-                JE finDibujarMarco
-                INT 10h ; Dibujar pixel
-                DEC DX ; Decrementar DX (Fila anterior)
-                JMP bucleMarcoDerecho
-            
-            finDibujarMarco:
-            RET ; Retornar procedimiento
-
-        dibujarMarco ENDP
-
-        ;****************** FIN DIBUJAR MARCO *****************
+        ;***************** VERIFICAR PARTIDA ******************
 
         verificarPartida PROC NEAR
             CMP variableVictoria, 1 ; Verificar si el jugador ganó
@@ -756,6 +933,8 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             finalizarVerificacion:
                 RET ; Retornar al procedimiento que lo llamó
         verificarPartida ENDP
+
+        ;*************** FIN VERIFICAR PARTIDA ****************
 
         ;******************** ACCIONAR NAVE *******************
 
@@ -791,14 +970,14 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             JNE salirAccionarNave ; Si no toca ninguna de las teclas, entonces salir del movimiento de nave
 
             moverDerecha:
-                CMP naveX, 248 ; 248 es el maximo de la columna (Para que no se salga y quede margen)
-                JAE salirAccionarNave ; Si es mayor o igual a 248, entonces salir del movimiento de nave
+                CMP naveX, 247 ; 247 es el maximo de la columna (Para que no se salga y quede margen)
+                JAE salirAccionarNave ; Si es mayor o igual a 247, entonces salir del movimiento de nave
                 ADD naveX, 3 ; Sumar 3 a la columna (Mover a la derecha 3 pixeles)
                 JMP salirAccionarNave
             
             moverIzquierda:
-                CMP naveX, 28 ; 28 es el minimo de la columna (Para que no se salga y quede margen)
-                JBE salirAccionarNave ; Si es menor o igual a 60, entonces salir del movimiento de nave
+                CMP naveX, 39 ; 39 es el minimo de la columna (Para que no se salga y quede margen)
+                JBE salirAccionarNave ; Si es menor o igual a 39, entonces salir del movimiento de nave
                 SUB naveX, 3 ; Restar 3 a la columna (Mover a la izquierda 3 pixeles)
                 JMP salirAccionarNave
             
@@ -976,11 +1155,40 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
 
         ;*********** FIN MOSTRAR DISPAROS ALIENS **************
 
+        ;******************* MOSTRAR CASAS ********************
+
+        mostrarCasas PROC NEAR
+            MOV SI, 0
+            bucleMostrarCasas:
+                CMP SI, 8 ; Comparar si la posicion actual del arreglo es la cantidad de casas
+                JE finalizarMostrarCasas ; Si es la cantidad de casas, entonces salir del bucle
+                MOV BX, arregloCasas[SI] ; Mover a BX la posicion actual de la casa
+
+                CMP BX, 0 ; Si la casa ya fue destruida, entonces continuar con el bucle
+                JE seguirBucleMostrarCasas
+
+                MOV DL, BH ; Mover a DX la fila (Y)
+                XOR DH, DH
+                MOV CL, BL ; Mover a CX la columna (X)
+                XOR CH, CH
+
+                dibujarCasa ; Llamar al macro para dibujar la casa
+
+            seguirBucleMostrarCasas:
+                ADD SI, 2 ; Sumar 2 al indice del arreglo (Siguiente alien)
+                JMP bucleMostrarCasas
+
+            finalizarMostrarCasas:
+                RET ; Retornar procedimiento
+        mostrarCasas ENDP
+
+        ;***************** FIN MOSTRAR CASAS ******************
+
         ;****************** DISPARAR ALIEN ********************
 
         ; Procedimiento para disparar un alien aleatorio
         ; SALIDAS: Dispara un alien aleatorio
-        dispararAlien PROC NEAR
+        llamarDispararAlien PROC NEAR
             inicioDispararAlien:
             generarNumeroRandom 3 ; Generar un número aleatorio entre 0 y 2
             MOV AL, numeroRandom ; Mover a AL el número aleatorio
@@ -988,63 +1196,23 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
             JE esCero
             CMP AL, 1 ; Comparar si el número aleatorio es 1
             JE esUno
-            JMP esDos ; Si no es 0 ni 1, entonces es 2
+
+            ; Si no es 0 ni 1, entonces es 2
+            dispararAlien arregloAliens3, 20 ; Disparar un alien de la segunda fila
+            JMP salirLlamarDispararAlien ; Salir del procedimiento
 
             ; Si es cero:
             esCero:
-                generarNumeroRandom 10 ; Generar un número aleatorio entre 0 y 9
-                MOV AH, numeroRandom ; Mover a AH el número aleatorio
-                MOV AL, 2 ; Mover a AL el número 2
-                MUL AH ; Multiplicar el número aleatorio por 2
-
-                XOR AH, AH ; Limpiar AH
+                dispararAlien arregloAliens1, 10 ; Disparar un alien de la segunda fila
+                JMP salirLlamarDispararAlien ; Salir del procedimiento
                 
-                MOV SI, AX ; Mover a SI el número aleatorio
-                MOV BX, arregloAliens1[SI] ; Mover a BX la posicion del alien
-                CMP BX, 0 ; Comparar si el alien está muerto
-                JE salirDispararAlien ; Si está muerto, volver a empezar
-
-                JMP enviarDisparoAlien ; Si no está muerto, entonces disparar
-
             ; Si es uno:
             esUno:
-                generarNumeroRandom 20 ; Generar un número aleatorio entre 0 y 19
-                MOV AH, numeroRandom ; Mover a AH el número aleatorio
-                MOV AL, 2 ; Mover a AL el número 2
-                MUL AH ; Multiplicar el número aleatorio por 2
-                XOR AH, AH ; Limpiar AH
-
-                MOV SI, AX ; Mover a SI el número aleatorio
-                MOV BX, arregloAliens2[SI] ; Mover a BX la posicion del alien
-                CMP BX, 0 ; Comparar si el alien está muerto
-                JE salirDispararAlien ; Si está muerto, volver a empezar
-
-                JMP enviarDisparoAlien ; Si no está muerto, entonces disparar
-
-            ; Si es dos:
-            esDos:
-                generarNumeroRandom 20 ; Generar un número aleatorio entre 0 y 19
-                MOV AH, numeroRandom ; Mover a AH el número aleatorio
-                MOV AL, 2 ; Mover a AL el número 2
-                MUL AH ; Multiplicar el número aleatorio por 2
-
-                XOR AH, AH ; Limpiar AH
-
-                MOV SI, AX ; Mover a SI el número aleatorio
-                MOV BX, arregloAliens3[SI] ; Mover a BX la posicion del alien
-                CMP BX, 0 ; Comparar si el alien está muerto
-                JE salirDispararAlien ; Si está muerto, volver a empezar
-
-                JMP enviarDisparoAlien ; Si no está muerto, entonces disparar
-
-            enviarDisparoAlien:
-                ; BH = Fila (Y) / BL = Columna (X)
-                ADD DX, 4 ; Sumar 4 a la fila (Cuatro filas más abajo)
-                guardarDisparoAlien BX ; Llamar al macro para guardar el disparo
-
-            salirDispararAlien:
+                dispararAlien arregloAliens2, 20 ; Disparar un alien de la segunda fila
+        
+            salirLlamarDispararAlien:
                 RET ; Retornar procedimiento
-        dispararAlien ENDP
+        llamarDispararAlien ENDP
 
         ;**************** FIN DISPARAR ALIEN ******************
 
@@ -1078,9 +1246,5 @@ opcionVolverAJugar DB "(Y) VOLVER A JUGAR", "$"
         llamarMoverAliens ENDP
 
         ;**************** FIN MOVER ALIENS ********************
-        
-        finalizarPrograma:
-            MOV AH, 4Ch ; Salir del programa
-            INT 21h ; Ejecutar la configuracion
     main ENDP
 END
