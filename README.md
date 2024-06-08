@@ -2,7 +2,7 @@
 Debe de saber que este juego está en proceso de ser terminado visualmente y optimizado, pero ya está disponible su jugabilidad completa.
 ### Introducción
 Este es un proyecto del mítico juego "Space Invaders", recreándolo en ensamblador x86 MASM sin utilizar recursos externos a los del propio ensamblador, así que debería ser fácil de ejecutar en cualquier máquina que utilice Windows como sistema operativo.
->El programa debe ser compilado en MASM, de lo contrario, no va a funcionar.
+>El programa debe ser compilado en MASM, de lo contrario, no va a funcionar, para una ejecución más sencilla puede usar el **[Compilador de MASM/TASM en VSCode](https://marketplace.visualstudio.com/items?itemName=xsro.masm-tasm)**.
 
 ### Aspectos de Jugabilidad
 - Movimiento: A = Izquierda, D = Derecha, Espacio = Disparar
